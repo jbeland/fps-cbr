@@ -1,5 +1,11 @@
 package com.brackeen.scared.logger;
 
+/**
+ * This class is the singleton class to be used to access the logging utility.
+ * 
+ * @author Jordan
+ *
+ */
 public class Logger {
 
 	private static Logger instance;

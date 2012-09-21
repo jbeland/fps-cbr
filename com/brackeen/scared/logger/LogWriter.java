@@ -1,12 +1,16 @@
 package com.brackeen.scared.logger;
 
-
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
 
+/**
+ * This class handles writing the individual logs to the log file.
+ * 
+ * @author Jordan
+ *
+ */
 public class LogWriter implements Runnable {
 	
 	private String toLog;

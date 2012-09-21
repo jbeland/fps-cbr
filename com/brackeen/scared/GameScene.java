@@ -25,9 +25,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -805,7 +802,7 @@ public class GameScene extends Scene {
      * 
      * @author jbeland
      */
-    public void generateClone(){
+    private void generateClone(){
     	SoftTexture[] enemyTextures = new SoftTexture[Enemy.NUM_IMAGES];
         for (int i = 0; i < Enemy.NUM_IMAGES; i++) {
             enemyTextures[i] = textureCache.get("/enemy/" + i + ".png");
