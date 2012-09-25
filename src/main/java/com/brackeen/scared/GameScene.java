@@ -9,6 +9,7 @@ import com.brackeen.app.view.Label;
 import com.brackeen.app.view.Scene;
 import com.brackeen.app.view.View;
 import com.brackeen.scared.entity.BlastMark;
+import com.brackeen.scared.entity.Clone;
 import com.brackeen.scared.entity.Enemy;
 import com.brackeen.scared.entity.Entity;
 import com.brackeen.scared.entity.Key;
@@ -58,6 +59,8 @@ public class GameScene extends Scene {
     private boolean keyLeft = false;
     private boolean keyRight = false;
     private boolean keyDown = false;
+    private boolean keyGenerateClone = false;
+    private boolean cloneGenerated = false;
     private boolean keyUp = false;
     private boolean keyStrafeLeft = false;
     private boolean keyStrafeRight = false;
@@ -76,6 +79,7 @@ public class GameScene extends Scene {
     private float turnVelocity = 0;
     
     private int ticksUntilRefire;
+    private int ticksCloneDelay = 0;
     private int nextAction = ACTION_NONE;
     private int nextActionTicksRemaining;
     
@@ -130,6 +134,10 @@ public class GameScene extends Scene {
         
         for (int i = 0; i < Enemy.NUM_IMAGES; i++) {
             getTexture("/enemy/" + i + ".png", true);
+        }
+        
+        for (int i = 0; i < Clone.NUM_IMAGES; i++) {
+            getTexture("/clone/" + i + ".png", true);
         }
         
         // All textures must be a size that is a power-of-two. 128x128, 64x64, etc.
@@ -482,6 +490,9 @@ public class GameScene extends Scene {
             case KeyEvent.VK_C:
                 keyStrafeModifier = down;
                 break;
+            case KeyEvent.VK_G:
+            	keyGenerateClone = down;
+            	break;
         }
     }
     
@@ -586,6 +597,19 @@ public class GameScene extends Scene {
             return "Unknown command";
         }
     }
+    
+    /**
+     * Handles the time required to pass between being able to generate a clone
+     * 
+     * @author jbeland
+     */
+    private void checkCloneGenerationDelay(){
+    	 ticksCloneDelay++;
+         if(ticksCloneDelay >= 1000){
+         	ticksCloneDelay = 0;
+         	cloneGenerated = false;
+         }
+    }
 
     @Override
     public void onTick() {
@@ -594,6 +618,8 @@ public class GameScene extends Scene {
             resetKeys();
             return;
         }
+        
+        checkCloneGenerationDelay();
         
         // Handle blocking actions
         if (nextAction != ACTION_NONE) {
@@ -707,6 +733,7 @@ public class GameScene extends Scene {
         keyStrafeModifier = false;
         keyFire = false;
         mousePressed = false;
+        keyGenerateClone = false;
         crosshair.setLocation(getWidth() / 2, getHeight() / 2);
     }
     
@@ -738,10 +765,14 @@ public class GameScene extends Scene {
         }
         
         List<Entity> hitEnemies = map.getCollisions(Enemy.class, player.getX(), player.getY(), p.x, p.y);
+        hitEnemies.addAll(map.getCollisions(Clone.class, player.getX(), player.getY(), p.x, p.y));
         if (hitEnemies.size() > 0) {
             for (Entity entity : hitEnemies) {
                 if (entity instanceof Enemy) {
                     ((Enemy)entity).hurt(6 + (int)(Math.random()*3)); //6..8
+                }
+                if (entity instanceof Clone) {
+                    ((Clone)entity).hurt(6 + (int)(Math.random()*3)); //6..8
                 }
             }
         }
@@ -760,6 +791,25 @@ public class GameScene extends Scene {
         mousePressed = false;
         map.getPlayer().setAlive(false);
         gameOverWinMessage.setVisible(true);
+    }
+    
+    /**
+     * Creates a clone and inserts it into the game.
+     * 
+     * @author jbeland, sgaudreau
+     */
+    private void generateClone(){
+    	SoftTexture[] cloneTextures = new SoftTexture[Clone.NUM_IMAGES];
+        for (int i = 0; i < Clone.NUM_IMAGES; i++) {
+            cloneTextures[i] = textureCache.get("/clone/" + i + ".png");
+        }
+        // need to add x and y coordinates
+        // TODO make it pop up in a better place
+        float x = map.getPlayer().getX();
+        float y = map.getPlayer().getY() + 2;
+        // add entity to the map
+    	map.addEntity(new Clone(map, cloneTextures, x + 0.5f, y + 0.5f, 1));
+    	cloneGenerated = true;
     }
     
     private void tickPlayer() {
@@ -804,10 +854,15 @@ public class GameScene extends Scene {
             ticksUntilRefire--;
         }
         
+        // Handle clone generation
+        if(keyGenerateClone && !cloneGenerated){
+        	generateClone();
+        }
+        
         // Move player
         boolean keyRun = false;
         boolean keyStrafe = false;
-        boolean keyTurn = false;
+        boolean keyTurn = false;   
         if (keyUp) {
             keyRun = true;
             runVelocity += RUN_ACCEL;
