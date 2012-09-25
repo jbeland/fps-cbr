@@ -13,6 +13,8 @@ import com.brackeen.scared.entity.Clone;
 import com.brackeen.scared.entity.Enemy;
 import com.brackeen.scared.entity.Entity;
 import com.brackeen.scared.entity.Key;
+import com.brackeen.scared.logger.Logger;
+
 import java.awt.Color;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -601,6 +603,12 @@ public class GameScene extends Scene {
      */
     private void checkCloneGenerationDelay(){
     	 ticksCloneDelay++;
+    	 if((ticksCloneDelay % 30) == 0){
+    		 // record play position
+    		 float xPos = map.getPlayer().getX();
+    		 float yPos = map.getPlayer().getY();
+    		 Logger.getInstance().log("x: " + xPos + ", y: " + yPos);
+    	 }
          if(ticksCloneDelay >= 1000){
          	ticksCloneDelay = 0;
          	cloneGenerated = false;
@@ -802,7 +810,7 @@ public class GameScene extends Scene {
         // need to add x and y coordinates
         // TODO make it pop up in a better place
         float x = map.getPlayer().getX();
-        float y = map.getPlayer().getY() + 2;
+        float y = map.getPlayer().getY();
         // add entity to the map
     	map.addEntity(new Clone(map, enemyTextures, x + 0.5f, y + 0.5f, 1));
     	cloneGenerated = true;
