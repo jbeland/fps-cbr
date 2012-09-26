@@ -137,6 +137,10 @@ public class GameScene extends Scene {
         for (int i = 0; i < Enemy.NUM_IMAGES; i++) {
             getTexture("/enemy/" + i + ".png", true);
         }
+		
+		for (int i = 0; i < Clone.NUM_IMAGES; i++) {
+            getTexture("/clone/" + i + ".png", true);
+        }
         
         // All textures must be a size that is a power-of-two. 128x128, 64x64, etc.
         String[] textures = {
@@ -803,16 +807,16 @@ public class GameScene extends Scene {
      * @author jbeland
      */
     private void generateClone(){
-    	SoftTexture[] enemyTextures = new SoftTexture[Enemy.NUM_IMAGES];
-        for (int i = 0; i < Enemy.NUM_IMAGES; i++) {
-            enemyTextures[i] = textureCache.get("/enemy/" + i + ".png");
+    	SoftTexture[] cloneTextures = new SoftTexture[Clone.NUM_IMAGES];
+        for (int i = 0; i < Clone.NUM_IMAGES; i++) {
+            cloneTextures[i] = textureCache.get("/clone/" + i + ".png");
         }
         // need to add x and y coordinates
         // TODO make it pop up in a better place
         float x = map.getPlayer().getX();
         float y = map.getPlayer().getY();
         // add entity to the map
-    	map.addEntity(new Clone(map, enemyTextures, x + 0.5f, y + 0.5f, 1));
+    	map.addEntity(new Clone(map, cloneTextures, x + 0.5f, y + 0.5f, 1));
     	cloneGenerated = true;
     }
     

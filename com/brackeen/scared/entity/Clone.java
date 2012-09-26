@@ -24,10 +24,11 @@ public class Clone extends Entity {
     private static final int STATE_HURT = 9;
     private static final int STATE_DYING = 10;
     private static final int STATE_DEAD = 11;
+    private static final int STATE_FOLLOW = 12;
     
-    //                                 state =   0   1   2   3   4   5   6   7   8   9  10  11
-    private static final int[] STATE_TEXTURE = { 0,  0,  2,  4,  6,  8,  0, 10, 11, 12, 13, 14 };
-    private static final int[] STATE_TICKS =  { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12 };
+    //                                 state =   0   1   2   3   4   5   6   7   8   9  10  11  12
+    private static final int[] STATE_TEXTURE = { 0,  0,  2,  4,  6,  8,  0, 10, 11, 12, 13, 14, 0};
+    private static final int[] STATE_TICKS =  { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12};
     
     private static final float STEP_SIZE = 0.05f;
 
@@ -157,55 +158,53 @@ public class Clone extends Entity {
         float dx = player.getX() - getX();
         float dy = player.getY() - getY();
         float angleToPlayer = (float)Math.atan2(dy, dx);
+        
+        setState(STATE_FOLLOW);
 
-        if ((ticksRemaining <= 0 || state == STATE_TERMINATE) && Math.abs(dx) < 2f && Math.abs(dy) < 2f && state < STATE_READY) {
-            // Player is very close - move immediately or fire
-            double pq = Math.random();
-
-            if (pq < 0.25f) {
-                setState(STATE_MOVE_FAR_LEFT);
-            }
-            else if (pq < 0.50f) {
-                setState(STATE_MOVE_FAR_RIGHT);
-            }
-            else {
-                setState(STATE_READY);
-            }
-        }
-        else if (state > STATE_ASLEEP && state < STATE_READY && Math.random() < p) {
-            // When moving, randomly change to another move state
-            int s = (int)Math.round(Math.random() * 6);
-            switch (s) {
-                case 0: default:
-                    setState(STATE_TERMINATE);
-                    break;
-                case 1:
-                    setState(STATE_MOVE_LEFT);
-                    break;
-                case 2:
-                    setState(STATE_MOVE_RIGHT);
-                    break;
-                case 3:
-                    setState(STATE_MOVE_FAR_LEFT);
-                    break;
-                case 4:
-                    setState(STATE_MOVE_FAR_RIGHT);
-                    break;
-                case 5:
-                    if (isPlayerVisible(angleToPlayer)) {
-                        setState(STATE_READY);
-                    }
-                    else {
-                        setState(STATE_TERMINATE);
-                    }
-                    break;
-            }
-        }
+//        if ((ticksRemaining <= 0 || state == STATE_TERMINATE) && Math.abs(dx) < 2f && Math.abs(dy) < 2f && state < STATE_READY) {
+//            // Player is very close - move immediately or fire
+//            double pq = Math.random();
+//
+//            if (pq < 0.25f) {
+//                setState(STATE_MOVE_FAR_LEFT);
+//            }
+//            else if (pq < 0.50f) {
+//                setState(STATE_MOVE_FAR_RIGHT);
+//            }
+//            else {
+//                setState(STATE_READY);
+//            }
+//        }
+//        else if (state > STATE_ASLEEP && state < STATE_READY && Math.random() < p) {
+//            // When moving, randomly change to another move state
+//            int s = (int)Math.round(Math.random() * 6);
+//            switch (s) {
+//                case 0: default:
+//                    setState(STATE_TERMINATE);
+//                    break;
+//                case 1:
+//                    setState(STATE_MOVE_LEFT);
+//                    break;
+//                case 2:
+//                    setState(STATE_MOVE_RIGHT);
+//                    break;
+//                case 3:
+//                    setState(STATE_MOVE_FAR_LEFT);
+//                    break;
+//                case 4:
+//                    setState(STATE_MOVE_FAR_RIGHT);
+//                    break;
+//                case 5:
+//                    setState(STATE_FOLLOW);
+//                    break;
+//            }
+//        }
         
         switch (state) {
             case STATE_ASLEEP:
                 if (isPlayerVisible(angleToPlayer)) {
-                    setState(STATE_TERMINATE);
+                	//vivibug
+                    setState(STATE_FOLLOW);
                 }
                 break;
                 
@@ -234,6 +233,11 @@ public class Clone extends Entity {
                 stepy = (float)Math.sin(angleToPlayer - Math.PI/2) * STEP_SIZE;
                 break;
 
+            case STATE_FOLLOW:
+            	stepx = (float)Math.cos(angleToPlayer) * STEP_SIZE;
+                stepy = (float)Math.sin(angleToPlayer) * STEP_SIZE;
+            	break;
+            	
             case STATE_READY:
                 if (ticksRemaining <= 0) {
                     setState(STATE_AIM);
@@ -253,37 +257,37 @@ public class Clone extends Entity {
                 break;
 
             case STATE_FIRE:
-                if (player.isFreezeEnemies()) {
-                    setState(STATE_TERMINATE);
-                }
-                else if (ticksRemaining <= 0) {
-                    App.getApp().getAudio("/sound/laser0.wav", 1).play();
-
-                    // fire shot
-                    if (isPlayerVisible(angleToPlayer)) {
-                        
-                        Point2D.Float point = map.getWallCollision(getX(), getY(), (float)Math.toDegrees(aimAngle));
-                        if (point != null) {
-                            List<Entity> playerHit = map.getCollisions(Player.class, getX(), getY(), point.x, point.y);
-                            if (playerHit.size() > 0) {
-                                // here, diffAngle is the differnce between the angle the
-                                // robot aimed at and the angle the player is currently at
-                                double diffAngle = Math.abs(aimAngle - angleToPlayer);
-                                int hitPoints = 0;
-                                if (diffAngle < .04) { // about 2.3 degrees
-                                    hitPoints = 15 + (int)Math.round(Math.random() * 7);
-                                }
-                                else if (diffAngle < .25) { // about 15 degrees
-                                    hitPoints = 3 + (int)Math.round(Math.random() * 5);
-                                }
-                                
-                                player.hurt(hitPoints);
-                            }
-                        }
-                    }
-                    
-                    setState(STATE_TERMINATE);
-                }
+//                if (player.isFreezeEnemies()) {
+//                    setState(STATE_TERMINATE);
+//                }
+//                else if (ticksRemaining <= 0) {
+//                    App.getApp().getAudio("/sound/laser0.wav", 1).play();
+//
+//                    // fire shot
+//                    if (isPlayerVisible(angleToPlayer)) {
+//                        
+//                        Point2D.Float point = map.getWallCollision(getX(), getY(), (float)Math.toDegrees(aimAngle));
+//                        if (point != null) {
+//                            List<Entity> playerHit = map.getCollisions(Player.class, getX(), getY(), point.x, point.y);
+//                            if (playerHit.size() > 0) {
+//                                // here, diffAngle is the differnce between the angle the
+//                                // robot aimed at and the angle the player is currently at
+//                                double diffAngle = Math.abs(aimAngle - angleToPlayer);
+//                                int hitPoints = 0;
+//                                if (diffAngle < .04) { // about 2.3 degrees
+//                                    hitPoints = 15 + (int)Math.round(Math.random() * 7);
+//                                }
+//                                else if (diffAngle < .25) { // about 15 degrees
+//                                    hitPoints = 3 + (int)Math.round(Math.random() * 5);
+//                                }
+//                                
+//                                player.hurt(hitPoints);
+//                            }
+//                        }
+//                    }
+//                    
+//                    setState(STATE_TERMINATE);
+//				}
 
                 break;
 
@@ -354,5 +358,10 @@ public class Clone extends Entity {
         }
 
         return false;
+    }
+    
+    private void dance()
+    {
+    	
     }
 }
