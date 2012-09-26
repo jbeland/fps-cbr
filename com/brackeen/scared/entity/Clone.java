@@ -24,11 +24,9 @@ public class Clone extends Entity {
     private static final int STATE_HURT = 9;
     private static final int STATE_DYING = 10;
     private static final int STATE_DEAD = 11;
-    //vivibug
     private static final int STATE_FOLLOW = 12;
     
     //                                 state =   0   1   2   3   4   5   6   7   8   9  10  11  12
-    //vivibug
     private static final int[] STATE_TEXTURE = { 0,  0,  2,  4,  6,  8,  0, 10, 11, 12, 13, 14, 0};
     private static final int[] STATE_TICKS =  { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12};
     
@@ -197,7 +195,6 @@ public class Clone extends Entity {
 //                    setState(STATE_MOVE_FAR_RIGHT);
 //                    break;
 //                case 5:
-//                	// vivibug: If the player is visible to the clone, make the clone follow it. 
 //                    setState(STATE_FOLLOW);
 //                    break;
 //            }
