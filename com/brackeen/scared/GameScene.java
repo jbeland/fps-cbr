@@ -55,6 +55,9 @@ public class GameScene extends Scene {
     private static final int ACTION_NONE = 0;
     private static final int ACTION_NEW_LEVEL = 1;
     private static final int ACTION_WIN = 2;
+	
+	private static final int PROGRESS_BAR_BEGIN = 1;
+	private static final int PROGRESS_BAR_END = 8;
         
     private HashMap<String, SoftTexture> textureCache = new HashMap<String, SoftTexture>();
     
@@ -62,6 +65,7 @@ public class GameScene extends Scene {
     private boolean keyRight = false;
     private boolean keyDown = false;
     private boolean keyGenerateClone = false;
+	private boolean keyStartLogging = false;
     private boolean cloneGenerated = false;
     private boolean keyUp = false;
     private boolean keyStrafeLeft = false;
@@ -84,6 +88,8 @@ public class GameScene extends Scene {
     private int ticksCloneDelay = 0;
     private int nextAction = ACTION_NONE;
     private int nextActionTicksRemaining;
+	
+	private int progressLogCounts = 1;
     
     private SoftTexture[] blastTextures = new SoftTexture[3];
     
@@ -103,6 +109,8 @@ public class GameScene extends Scene {
     private int ticksUntilHideSpecialStats;
     private ImageView gunView;
     private ImageView gunBlastView;
+	private ImageView progressBarView;
+	private ImageView[] inProgressView = new ImageView[9];
     private int gunBlastCountdown;
     private int deathTicksRemaining;
     private View warningSplash;
@@ -141,6 +149,18 @@ public class GameScene extends Scene {
 		for (int i = 0; i < Clone.NUM_IMAGES; i++) {
             getTexture("/clone/" + i + ".png", true);
         }
+		
+		// Addition of a progress bar to the user interface used for recording logs of the player's view of the game.
+		// Cache these images for reuse using weak references.
+		getTexture("/progressbar/pbEmpty.png", true);
+		getTexture("/progressbar/pb1.png", true);
+		getTexture("/progressbar/pb2.png", true);
+		getTexture("/progressbar/pb3.png", true);
+		getTexture("/progressbar/pb4.png", true);
+		getTexture("/progressbar/pb5.png", true);
+		getTexture("/progressbar/pb6.png", true);
+		getTexture("/progressbar/pb7.png", true);
+		getTexture("/progressbar/pbFull.png", true);
         
         // All textures must be a size that is a power-of-two. 128x128, 64x64, etc.
         String[] textures = {
@@ -206,6 +226,23 @@ public class GameScene extends Scene {
         gunView = new ImageView(app.getImage("/hud/gun01.png"));
         gunView.setLocation(getWidth() / 2, getHeight());
         addSubview(gunView);
+		
+		// Progress bar
+		// Positions the progress bar at the top right-hand corner of the game.
+		for (int i = PROGRESS_BAR_BEGIN; i < (PROGRESS_BAR_END + 1); i++) {
+			if(i == PROGRESS_BAR_END) {
+				inProgressView[i] = new ImageView(App.getApp().getImage("/progressbar/pbFull.png"));
+			} else {
+				inProgressView[i] = new ImageView(App.getApp().getImage("/progressbar/pb" + i + ".png"));
+			}
+			inProgressView[i].setLocation(getWidth() - 100, 10);
+			inProgressView[i].setVisible(false);
+			addSubview(inProgressView[i]);
+        }
+		
+		progressBarView = new ImageView(app.getImage("/progressbar/pbEmpty.png"));
+		progressBarView.setLocation(getWidth() - 100, 10);
+		addSubview(progressBarView);
         
         // Red warning splash
         int borderSize = 6;
@@ -345,7 +382,10 @@ public class GameScene extends Scene {
             }
 
             public void keyReleased(KeyEvent ke) {
-                keyDown(ke.getKeyCode(), false);
+				// The progress bar will stop working if this executes, as it will set keyStartLogging to false.
+				if (!(ke.getKeyCode() == KeyEvent.VK_R)){
+					keyDown(ke.getKeyCode(), false);
+				}
             }
         });
         setMouseListener(new MouseAdapter() {
@@ -495,6 +535,9 @@ public class GameScene extends Scene {
             case KeyEvent.VK_G:
             	keyGenerateClone = down;
             	break;
+			case KeyEvent.VK_R:
+				keyStartLogging = down;
+				break;
         }
     }
     
@@ -742,6 +785,7 @@ public class GameScene extends Scene {
         keyFire = false;
         mousePressed = false;
         keyGenerateClone = false;
+		keyStartLogging = false;
         crosshair.setLocation(getWidth() / 2, getHeight() / 2);
     }
     
@@ -815,10 +859,21 @@ public class GameScene extends Scene {
         // TODO make it pop up in a better place
         float x = map.getPlayer().getX();
         float y = map.getPlayer().getY();
-        // add entity to the map
-    	map.addEntity(new Clone(map, cloneTextures, x + 0.5f, y + 0.5f, 1));
+		// The values highlighted below are the X and Y coordinates of the clone that can be changed
+		// to place the clone at specific positions on the map.
+    	map.addEntity(new Clone(map, cloneTextures, x + 1.0f, y, 1));
     	cloneGenerated = true;
     }
+	
+	/**
+	 * Updates the progress bar on the user interface as logs are being recorded from the game.
+	 * 
+	 * @author vandreev
+	 */
+	private void indicateProgress(int logCounts) {
+		progressBarView.setVisible(false);
+		inProgressView[logCounts].setVisible(true);
+	}
     
     private void tickPlayer() {
         Player player = map.getPlayer();
@@ -866,6 +921,17 @@ public class GameScene extends Scene {
         if(keyGenerateClone && !cloneGenerated){
         	generateClone();
         }
+		
+		// Handles the progress bar images as logging takes place.
+		if(keyStartLogging){
+			indicateProgress(progressLogCounts);
+			progressLogCounts++;
+			if (progressLogCounts == PROGRESS_BAR_END + 1) {
+				keyStartLogging = false;
+				progressLogCounts = 1;
+			}
+
+		}
         
         // Move player
         boolean keyRun = false;
