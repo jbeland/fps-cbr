@@ -131,7 +131,7 @@ public class Enemy extends Entity {
         return true;
     }
     
-    private boolean isPlayerVisible(float angleToPlayer) {
+    public boolean isPlayerVisible(float angleToPlayer) {
         if (playerVisibilityNeedsCalculation) {
             playerVisibilityNeedsCalculation = false;
             isPlayerVisible = false;
