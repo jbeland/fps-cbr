@@ -585,4 +585,20 @@ public class Map {
             y += dy;
         }
     }
+    
+    public int numOfEnemiesVisible(){
+    	int numVisible = 0;
+    	for(Entity e : entities){
+    		if(e instanceof Enemy){
+    			Enemy enemy = (Enemy)e;
+    			float dx = player.getX() - enemy.getX();
+    	        float dy = player.getY() - enemy.getY();
+    	        float angleToPlayer = (float)Math.atan2(dy, dx);
+    	        if(enemy.isPlayerVisible(angleToPlayer)){
+    	        	numVisible++;
+    	        }
+    		}
+    	}
+    	return numVisible;
+    }
 }

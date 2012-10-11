@@ -607,12 +607,6 @@ public class GameScene extends Scene {
      */
     private void checkCloneGenerationDelay(){
     	 ticksCloneDelay++;
-    	 if((ticksCloneDelay % 30) == 0){
-    		 // record play position
-    		 float xPos = map.getPlayer().getX();
-    		 float yPos = map.getPlayer().getY();
-    		 Logger.getInstance().log("x: " + xPos + ", y: " + yPos);
-    	 }
          if(ticksCloneDelay >= 1000){
          	ticksCloneDelay = 0;
          	cloneGenerated = false;
@@ -820,166 +814,188 @@ public class GameScene extends Scene {
     	cloneGenerated = true;
     }
     
-    private void tickPlayer() {
-        Player player = map.getPlayer();
-        
-        if (hasWon) {
-            if (mousePressed) {
-                player.setHealth(Player.DEFAULT_HEALTH);
-                player.setAmmo(Player.DEFAULT_AMMO);
-                setLevel(0);
-            }
-            return;
-        }
-        else if (!player.isAlive()) {
-            player.setZ(Math.max(player.getZ() - 0.008f, player.getRadius()));
-            deathTicksRemaining--;
-            if (deathTicksRemaining <= 0) {
-                gameOverLoseMessage.setVisible(true);
-                if (mousePressed) {
-                    player.setHealth(Player.DEFAULT_HEALTH);
-                    player.setAmmo(Player.DEFAULT_AMMO);
-                    setLevel(level);
-                }
-            }
-            else {
-                mousePressed = false;
-            }
-            return;
-        }
-        else {
-            deathTicksRemaining = 60;
-        }
+	/**
+	 * Gathers all the game information that will logged and logs it.
+	 * 
+	 * @author jbeland
+	 */
+	private void generateLog(String action) {
+		Player playerSnapshot = map.getPlayer();
+		float xPos = playerSnapshot.getX();
+		float yPos = playerSnapshot.getY();
+		String playerPosition = xPos + "," + yPos;
+		int health = playerSnapshot.getHealth();
+		int ammo = playerSnapshot.getAmmo();
+		boolean hasKeys = playerSnapshot.hasKey(1);
+		boolean hitRecently = playerSnapshot.wasHitRecently();
+		int numEnemiesVisible = map.numOfEnemiesVisible();
+		Logger.getInstance().log(
+				playerPosition + "," + health + "," + ammo + "," + hasKeys
+						+ "," + hitRecently + "," + numEnemiesVisible + "?"
+						+ action);
+	}
+    
+	private void tickPlayer() {
+		Player player = map.getPlayer();
 
-        // Handle firing
-        if (keyFire || mousePressed) {
-            if (ticksUntilRefire <= 0) {
-                fire();
-                ticksUntilRefire = FIRE_COUNTDOWN;
-            }
-        }
-        if (ticksUntilRefire > 0) {
-            ticksUntilRefire--;
-        }
-        
-        // Handle clone generation
-        if(keyGenerateClone && !cloneGenerated){
-        	generateClone();
-        }
-        
-        // Move player
-        boolean keyRun = false;
-        boolean keyStrafe = false;
-        boolean keyTurn = false;   
-        if (keyUp) {
-            keyRun = true;
-            runVelocity += RUN_ACCEL;
+		if (hasWon) {
+			if (mousePressed) {
+				player.setHealth(Player.DEFAULT_HEALTH);
+				player.setAmmo(Player.DEFAULT_AMMO);
+				setLevel(0);
+			}
+			return;
+		} else if (!player.isAlive()) {
+			player.setZ(Math.max(player.getZ() - 0.008f, player.getRadius()));
+			deathTicksRemaining--;
+			if (deathTicksRemaining <= 0) {
+				gameOverLoseMessage.setVisible(true);
+				if (mousePressed) {
+					player.setHealth(Player.DEFAULT_HEALTH);
+					player.setAmmo(Player.DEFAULT_AMMO);
+					setLevel(level);
+				}
+			} else {
+				mousePressed = false;
+			}
+			return;
+		} else {
+			deathTicksRemaining = 60;
+		}
 
-            if (runVelocity > MAX_RUN_VELOCITY) {
-                runVelocity = MAX_RUN_VELOCITY;
-            }
-        }
+		// Handle firing
+		if (keyFire || mousePressed) {
+			if (ticksUntilRefire <= 0) {
+				generateLog("FIRE");
+				fire();
+				ticksUntilRefire = FIRE_COUNTDOWN;
+			}
+		}
+		if (ticksUntilRefire > 0) {
+			ticksUntilRefire--;
+		}
 
-        if (keyDown) {
-            keyRun = true;
-            runVelocity -= RUN_ACCEL;
+		// Handle clone generation
+		if (keyGenerateClone && !cloneGenerated) {
+			generateClone();
+		}
 
-            if (runVelocity < MIN_RUN_VELOCITY) {
-                runVelocity = MIN_RUN_VELOCITY;
-            }
-        }
-        
-        if (keyStrafeLeft || (keyStrafeModifier && keyLeft)) {
-            keyStrafe = true;
-            strafeVelocity += STRAFE_ACCEL;
+		// Move player
+		boolean keyRun = false;
+		boolean keyStrafe = false;
+		boolean keyTurn = false;
+		if (keyUp) {
+			generateLog("FORWARD");
+			keyRun = true;
+			runVelocity += RUN_ACCEL;
 
-            if (strafeVelocity > MAX_STRAFE_VELOCITY) {
-                strafeVelocity = MAX_STRAFE_VELOCITY;
-            }
-        }
+			if (runVelocity > MAX_RUN_VELOCITY) {
+				runVelocity = MAX_RUN_VELOCITY;
+			}
+		}
 
-        if (keyLeft && !keyStrafeModifier) {
-            keyTurn = true;
-            turnVelocity += TURN_ACCEL;
+		if (keyDown) {
+			generateLog("BACK");
+			keyRun = true;
+			runVelocity -= RUN_ACCEL;
 
-            if (turnVelocity > MAX_TURN_VELOCITY) {
-                turnVelocity = MAX_TURN_VELOCITY;
-            }
-        }
-        
-        if (keyStrafeRight || (keyStrafeModifier && keyRight)) {
-            keyStrafe = true;
-            strafeVelocity -= STRAFE_ACCEL;
+			if (runVelocity < MIN_RUN_VELOCITY) {
+				runVelocity = MIN_RUN_VELOCITY;
+			}
+		}
 
-            if (strafeVelocity < MIN_STRAFE_VELOCITY) {
-                strafeVelocity = MIN_STRAFE_VELOCITY;
-            }
-        }
+		if (keyStrafeLeft || (keyStrafeModifier && keyLeft)) {
+			generateLog("STRAFE_LEFT");
+			keyStrafe = true;
+			strafeVelocity += STRAFE_ACCEL;
 
-        if (keyRight && !keyStrafeModifier) {
-            keyTurn = true;
-            turnVelocity -= TURN_ACCEL;
+			if (strafeVelocity > MAX_STRAFE_VELOCITY) {
+				strafeVelocity = MAX_STRAFE_VELOCITY;
+			}
+		}
 
-            if (turnVelocity < MIN_TURN_VELOCITY) {
-                turnVelocity = MIN_TURN_VELOCITY;
-            }
-        }
+		if (keyLeft && !keyStrafeModifier) {
+			generateLog("TURN_LEFT");
+			keyTurn = true;
+			turnVelocity += TURN_ACCEL;
 
-        if (!keyRun && runVelocity != 0) {
-            if (Math.abs(runVelocity) <= RUN_DECEL) {
-                runVelocity = 0;
-            }
-            else if (runVelocity < 0) {
-                runVelocity += RUN_DECEL;
-            }
-            else {
-                runVelocity -= RUN_DECEL;
-            }
-        }
+			if (turnVelocity > MAX_TURN_VELOCITY) {
+				turnVelocity = MAX_TURN_VELOCITY;
+			}
+		}
 
-        if (!keyStrafe && strafeVelocity != 0) {
-            if (Math.abs(strafeVelocity) <= STRAFE_DECEL) {
-                strafeVelocity = 0;
-            }
-            else if (strafeVelocity < 0) {
-                strafeVelocity += STRAFE_DECEL;
-            }
-            else {
-                strafeVelocity -= STRAFE_DECEL;
-            }
-        }
+		if (keyStrafeRight || (keyStrafeModifier && keyRight)) {
+			generateLog("STRAFE_RIGHT");
+			keyStrafe = true;
+			strafeVelocity -= STRAFE_ACCEL;
 
-        if (!keyTurn && turnVelocity != 0) {
-            if (Math.abs(turnVelocity) <= TURN_DECEL) {
-                turnVelocity = 0;
-            }
-            else if (turnVelocity < 0) {
-                turnVelocity += TURN_DECEL;
-            }
-            else {
-                turnVelocity -= TURN_DECEL;
-            }
-        }
-        
-        if (turnVelocity != 0) {
-            player.setDirection((player.getDirection() + turnVelocity) % 360);
-        }
-        
-        float strafeDir = player.getDirection() + 90;
-        float cosPlayerDir = (float)Math.cos(Math.toRadians(player.getDirection()));
-        float sinPlayerDir = (float)Math.sin(Math.toRadians(player.getDirection()));
-        float cosPlayerStrafeDir = (float)Math.cos(Math.toRadians(strafeDir));
-        float sinPlayerStrafeDir = (float)Math.sin(Math.toRadians(strafeDir));
-            
-        float dx = cosPlayerDir * runVelocity;
-        float dy = -sinPlayerDir * runVelocity;
-        dx += cosPlayerStrafeDir * strafeVelocity;
-        dy += -sinPlayerStrafeDir * strafeVelocity;
+			if (strafeVelocity < MIN_STRAFE_VELOCITY) {
+				strafeVelocity = MIN_STRAFE_VELOCITY;
+			}
+		}
 
-        if (dx == 0 && dy == 0) {
-            return;
-        }
-        
-        collisionDetection.move(player, player.getX() + dx, player.getY() + dy, true, true);
-    }
+		if (keyRight && !keyStrafeModifier) {
+			generateLog("TURN_RIGHT");
+			keyTurn = true;
+			turnVelocity -= TURN_ACCEL;
+
+			if (turnVelocity < MIN_TURN_VELOCITY) {
+				turnVelocity = MIN_TURN_VELOCITY;
+			}
+		}
+
+		if (!keyRun && runVelocity != 0) {
+			if (Math.abs(runVelocity) <= RUN_DECEL) {
+				runVelocity = 0;
+			} else if (runVelocity < 0) {
+				runVelocity += RUN_DECEL;
+			} else {
+				runVelocity -= RUN_DECEL;
+			}
+		}
+
+		if (!keyStrafe && strafeVelocity != 0) {
+			if (Math.abs(strafeVelocity) <= STRAFE_DECEL) {
+				strafeVelocity = 0;
+			} else if (strafeVelocity < 0) {
+				strafeVelocity += STRAFE_DECEL;
+			} else {
+				strafeVelocity -= STRAFE_DECEL;
+			}
+		}
+
+		if (!keyTurn && turnVelocity != 0) {
+			if (Math.abs(turnVelocity) <= TURN_DECEL) {
+				turnVelocity = 0;
+			} else if (turnVelocity < 0) {
+				turnVelocity += TURN_DECEL;
+			} else {
+				turnVelocity -= TURN_DECEL;
+			}
+		}
+
+		if (turnVelocity != 0) {
+			player.setDirection((player.getDirection() + turnVelocity) % 360);
+		}
+
+		float strafeDir = player.getDirection() + 90;
+		float cosPlayerDir = (float) Math.cos(Math.toRadians(player
+				.getDirection()));
+		float sinPlayerDir = (float) Math.sin(Math.toRadians(player
+				.getDirection()));
+		float cosPlayerStrafeDir = (float) Math.cos(Math.toRadians(strafeDir));
+		float sinPlayerStrafeDir = (float) Math.sin(Math.toRadians(strafeDir));
+
+		float dx = cosPlayerDir * runVelocity;
+		float dy = -sinPlayerDir * runVelocity;
+		dx += cosPlayerStrafeDir * strafeVelocity;
+		dy += -sinPlayerStrafeDir * strafeVelocity;
+
+		if (dx == 0 && dy == 0) {
+			return;
+		}
+
+		collisionDetection.move(player, player.getX() + dx, player.getY() + dy,
+				true, true);
+	}
 }
