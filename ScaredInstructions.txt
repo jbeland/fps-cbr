@@ -1,0 +1,7 @@
+cd Scared
+mvn clean install
+appletviewer target/index.html
+
+
+-- Branch
+https://help.github.com/articles/fork-a-repo
